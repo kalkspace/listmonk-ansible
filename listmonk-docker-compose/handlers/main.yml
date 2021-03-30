@@ -1,0 +1,8 @@
+---
+- name: restart traefik
+  community.general.docker_compose:
+    project_src: /etc/kalkspace/listmonk/
+    pull: yes
+    restarted: yes
+    services:
+      - traefik

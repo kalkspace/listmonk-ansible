@@ -1,0 +1,9 @@
+---
+- name: Configure kalkspace listmonk
+  hosts:
+    - listmonk
+  vars_files:
+    - vault/secrets.yml
+  roles:
+    - user
+    - listmonk-docker-compose

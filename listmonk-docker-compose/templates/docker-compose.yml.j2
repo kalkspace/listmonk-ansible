@@ -1,0 +1,50 @@
+version: "3"
+volumes:
+  database:
+  traefik-certs:
+  uploads:
+
+networks:
+  ingress:
+  db:
+
+services:
+  traefik:
+    image: traefik:v2.4
+    restart: unless-stopped
+    # use host networking to bind to ipv6 as well in a cheap way :S
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/kalkspace/listmonk/traefik.toml:/etc/traefik/traefik.toml
+      - traefik-certs:/var/traefik_certs
+
+  listmonk:
+    restart: unless-stopped
+    image: listmonk/listmonk:latest
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.getraenkekasse-https.entrypoints: websecure
+      traefik.http.routers.getraenkekasse-https.rule: Host(`listmonk.kalk.space`)
+      traefik.http.routers.getraenkekasse-https.tls.certresolver: letsencrypt
+    environment:
+      - LISTMONK_app__admin_password={{ admin_password }}
+      - LISTMONK_db__password={{ pg_password }}
+    volumes:
+      - uploads:/var/uploads
+    depends_on:
+      - db
+    networks:
+      - ingress
+      - db
+
+  db:
+    networks:
+      - db
+    image: postgres:11
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: {{ pg_password }}
+      POSTGRES_USER: listmonk
+    volumes:
+      - database:/var/lib/postgresql/data

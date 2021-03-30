@@ -1,0 +1,43 @@
+---
+- name: apt update && upgrade
+  apt:
+    cache_valid_time: 3600
+    upgrade: safe
+- name: create kalkspace settings dir
+  file:
+    path: /etc/kalkspace
+    state: directory
+    owner: root
+    group: root
+- name: install required packages
+  apt:
+    pkg:
+      - docker.io
+      - docker-compose
+      - python3-docker
+- name: enable docker
+  systemd:
+    name: docker
+    enabled: yes
+    masked: no
+    state: started
+- name: listmonk directory
+  file:
+    path: /etc/kalkspace/listmonk
+    state: directory
+- name: copy docker-compose definition
+  ansible.builtin.template:
+    src: templates/docker-compose.yml.j2
+    dest: /etc/kalkspace/listmonk/docker-compose.yml
+    mode: 0755
+- name: create traefik.toml
+  copy:
+    src: files/traefik.toml
+    dest: /etc/kalkspace/listmonk/traefik.toml
+    mode: 0755
+  notify:
+    - restart traefik
+- name: start listmonk setup
+  community.general.docker_compose:
+    project_src: /etc/kalkspace/listmonk/
+    pull: yes
